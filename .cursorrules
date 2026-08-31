@@ -1,0 +1,442 @@
+# SchoolOps — Cursor Rules
+# Multi-tenant School Management SaaS | Next.js 16 App Router | TypeScript
+
+## Project Identity
+- Project name: SchoolOps
+- Domain: School and academy administration SaaS for Pakistani market
+- Currency: PKR (Pakistani Rupee, Rs.)
+- Primary users: School Owners, Admins, Teachers — non-technical staff
+- SaaS layer: Developer/owner admin panel separate from tenant apps
+- Language: English UI, but names/data will be Urdu/Pakistani (handle gracefully)
+
+---
+
+## Stack
+
+- **Framework:** Next.js 16 (App Router only — never use Pages Router)
+- **Language:** TypeScript (strict mode — no `any`, no implicit types)
+- **Styling:** Tailwind CSS v3 + shadcn/ui components
+- **State:** Zustand for global/auth state, TanStack Query (React Query) for server state
+- **Forms:** React Hook Form + Zod validation
+- **Tables:** TanStack Table v8
+- **Charts:** Recharts
+- **HTTP Client:** Axios with typed response wrappers
+- **Auth:** JWT tokens stored in httpOnly cookies (never localStorage)
+- **PDF:** react-pdf or @react-pdf/renderer for receipt/report generation
+- **Icons:** Lucide React only
+- **Date handling:** date-fns
+- **Notifications:** Sonner (toast)
+- **Modals/Drawers:** shadcn/ui Dialog and Sheet
+
+---
+
+## Folder Structure (Strict — Do Not Deviate)
+
+```
+src/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   └── layout.tsx
+│   ├── (saas-admin)/
+│   │   ├── saas/
+│   │   │   ├── dashboard/page.tsx
+│   │   │   ├── schools/page.tsx
+│   │   │   ├── schools/[id]/page.tsx
+│   │   │   └── subscriptions/page.tsx
+│   │   └── layout.tsx
+│   ├── (tenant)/
+│   │   ├── dashboard/page.tsx
+│   │   ├── students/
+│   │   │   ├── page.tsx
+│   │   │   ├── [id]/page.tsx
+│   │   │   └── admissions/page.tsx
+│   │   ├── attendance/page.tsx
+│   │   ├── fees/
+│   │   │   ├── page.tsx
+│   │   │   ├── collect/page.tsx
+│   │   │   ├── receipts/page.tsx
+│   │   │   └── outstanding/page.tsx
+│   │   ├── academics/
+│   │   │   ├── classes/page.tsx
+│   │   │   ├── sessions/page.tsx
+│   │   │   ├── exams/page.tsx
+│   │   │   └── results/page.tsx
+│   │   ├── staff/
+│   │   │   ├── page.tsx
+│   │   │   └── payroll/page.tsx
+│   │   ├── finance/
+│   │   │   └── expenses/page.tsx
+│   │   ├── reports/page.tsx
+│   │   ├── analytics/page.tsx
+│   │   ├── notifications/page.tsx
+│   │   ├── settings/page.tsx
+│   │   └── layout.tsx
+│   ├── layout.tsx          ← root layout (fonts, providers)
+│   └── globals.css
+├── components/
+│   ├── ui/                 ← shadcn auto-generated, do not hand-edit
+│   ├── layout/
+│   │   ├── Sidebar.tsx
+│   │   ├── Topbar.tsx
+│   │   ├── SaasAdminSidebar.tsx
+│   │   └── GlobalSearch.tsx
+│   ├── dashboard/
+│   │   ├── MetricCard.tsx
+│   │   ├── AttendanceChart.tsx
+│   │   ├── FeeCollectionChart.tsx
+│   │   ├── StudentsByClassChart.tsx
+│   │   └── ActivityFeed.tsx
+│   ├── students/
+│   │   ├── StudentTable.tsx
+│   │   ├── StudentProfile.tsx
+│   │   ├── AdmissionForm.tsx
+│   │   └── StudentStatusBadge.tsx
+│   ├── attendance/
+│   │   ├── AttendanceSheet.tsx
+│   │   └── AttendanceBadge.tsx
+│   ├── fees/
+│   │   ├── FeeCollectionForm.tsx
+│   │   ├── ReceiptPreview.tsx
+│   │   └── FeeTable.tsx
+│   ├── staff/
+│   │   ├── StaffTable.tsx
+│   │   └── StaffForm.tsx
+│   ├── exams/
+│   │   ├── ExamForm.tsx
+│   │   └── ResultTable.tsx
+│   ├── common/
+│   │   ├── PageHeader.tsx
+│   │   ├── DataTable.tsx         ← reusable TanStack Table wrapper
+│   │   ├── EmptyState.tsx
+│   │   ├── LoadingState.tsx
+│   │   ├── ErrorState.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── FilterBar.tsx
+│   │   ├── ExportButton.tsx
+│   │   └── StatusBadge.tsx
+│   └── saas-admin/
+│       ├── SchoolCard.tsx
+│       └── PlatformMetricCard.tsx
+├── hooks/
+│   ├── useAuth.ts
+│   ├── usePermissions.ts
+│   ├── useStudents.ts
+│   ├── useAttendance.ts
+│   ├── useFees.ts
+│   ├── useStaff.ts
+│   ├── useExams.ts
+│   └── useDebounce.ts
+├── lib/
+│   ├── api.ts              ← Axios instance with interceptors
+│   ├── auth.ts             ← token helpers, session management
+│   ├── permissions.ts      ← RBAC permission matrix
+│   ├── utils.ts            ← cn(), formatCurrency(), formatDate()
+│   ├── constants.ts        ← ROLES, STATUS values, PLAN names
+│   └── validators/
+│       ├── student.schema.ts
+│       ├── fee.schema.ts
+│       ├── staff.schema.ts
+│       └── admission.schema.ts
+├── store/
+│   ├── authStore.ts        ← Zustand: user, role, school, token
+│   └── uiStore.ts          ← Zustand: sidebar state, active session
+├── types/
+│   ├── auth.types.ts
+│   ├── student.types.ts
+│   ├── fee.types.ts
+│   ├── staff.types.ts
+│   ├── attendance.types.ts
+│   ├── exam.types.ts
+│   ├── school.types.ts
+│   └── api.types.ts        ← ApiResponse<T>, PaginatedResponse<T>
+└── providers/
+    ├── QueryProvider.tsx
+    ├── AuthProvider.tsx
+    └── ThemeProvider.tsx
+```
+
+---
+
+## TypeScript Rules
+
+- Enable `strict: true` in tsconfig — no exceptions
+- Every function must have explicit return type annotations
+- Never use `any` — use `unknown` and narrow, or define proper types
+- Use discriminated unions for API response states
+- Prefer `interface` for object shapes, `type` for unions and aliases
+- All API responses typed via `ApiResponse<T>` generic wrapper:
+  ```ts
+  type ApiResponse<T> = {
+    data: T;
+    message: string;
+    success: boolean;
+  };
+  ```
+
+---
+
+## Component Rules
+
+- All components are functional with named exports (no default export for components)
+- Props interfaces named as `ComponentNameProps` in the same file
+- No inline styles — Tailwind classes only
+- No hardcoded colors — use Tailwind semantic tokens
+- Every component handles three states: loading, error, empty
+- Use `React.memo` only when there is a demonstrated render performance need
+- Server Components (RSC) by default in app/ — add `"use client"` only when required for:
+  - useState / useEffect
+  - Event handlers
+  - Browser APIs
+  - Zustand store access
+- Keep client components as leaf nodes — push `"use client"` as far down the tree as possible
+
+---
+
+## Routing & Layout Rules
+
+- Route groups: `(auth)`, `(tenant)`, `(saas-admin)` — never mix their layouts
+- Middleware (`middleware.ts`) enforces:
+  - Unauthenticated → redirect to `/login`
+  - `saas_admin` role → can only access `/saas/*`
+  - `teacher` role → blocked from fees, expenses, payroll, settings routes
+  - Active session required for all tenant routes
+- Dynamic segments: `[id]` for resource detail pages
+- Each route segment has its own `loading.tsx` and `error.tsx`
+
+---
+
+## Auth & Permissions
+
+### Roles (exactly these four, no others)
+```ts
+type Role = 'saas_admin' | 'owner' | 'admin' | 'teacher';
+```
+
+### Permission Matrix
+```ts
+// lib/permissions.ts
+const PERMISSIONS = {
+  students: { view: ['owner','admin','teacher'], manage: ['owner','admin'] },
+  admissions: { manage: ['owner','admin'] },
+  attendance: { view: ['owner','admin','teacher'], manage: ['owner','admin','teacher'] },
+  fees: { view: ['owner','admin'], manage: ['owner','admin'] },
+  staff: { view: ['owner','admin'], manage: ['owner'] },
+  payroll: { view: ['owner'], manage: ['owner'] },
+  expenses: { view: ['owner','admin'], manage: ['owner','admin'] },
+  exams: { view: ['owner','admin','teacher'], manage: ['owner','admin'] },
+  reports: { view: ['owner','admin'] },
+  analytics: { view: ['owner','admin'] },
+  settings: { manage: ['owner'] },
+  saas_dashboard: { view: ['saas_admin'] },
+} as const;
+```
+
+- `usePermissions()` hook checks current user role against permission matrix
+- Sidebar nav items rendered conditionally based on permissions
+- Route-level guard in middleware is the source of truth — component-level is secondary
+
+---
+
+## Data Fetching Patterns
+
+```ts
+// All server data via TanStack Query hooks in /hooks/
+// Example pattern:
+export function useStudents(filters: StudentFilters) {
+  return useQuery({
+    queryKey: ['students', filters],
+    queryFn: () => api.get<PaginatedResponse<Student>>('/students', { params: filters }),
+    staleTime: 30_000,
+  });
+}
+
+// Mutations always invalidate relevant query keys on success
+// Always handle onError with toast notification
+```
+
+- Optimistic updates for attendance toggling (high-frequency action)
+- No direct fetch() calls — always go through the Axios instance in `lib/api.ts`
+- `lib/api.ts` Axios instance attaches Authorization header from Zustand auth store
+- 401 response → clear auth store → redirect to login
+
+---
+
+## Form Rules
+
+```ts
+// All forms: React Hook Form + Zod
+// Schema defined in lib/validators/, imported in form component
+// Submit button disabled while submitting
+// Field errors shown inline below input
+// No alert() or console.log in production paths
+```
+
+- Admission form is multi-step (3 steps): Student Info → Guardian Info → Academic & Fee Info
+- Fee collection form is single-screen with student search at top
+- All forms show a loading spinner on the submit button during mutation
+
+---
+
+## UI Patterns & Design System
+
+### Color Palette (Tailwind config extension)
+```js
+// Primary: Indigo — professional, trustworthy
+// Accent: Emerald — success states, active items  
+// Destructive: Rose — errors, deletions
+// Neutral: Slate — text, borders, backgrounds
+colors: {
+  primary: { DEFAULT: '#4F46E5', ... },   // indigo-600
+  success: { DEFAULT: '#10B981', ... },   // emerald-500
+  warning: { DEFAULT: '#F59E0B', ... },   // amber-500
+  danger:  { DEFAULT: '#F43F5E', ... },   // rose-500
+}
+```
+
+### Sidebar
+- Width: 240px (expanded), 64px (collapsed icon-only)
+- Collapsible on mobile → Sheet drawer
+- Active route: `bg-primary/10 text-primary font-medium`
+- Grouped nav sections with subtle section labels
+- School name + logo at top of sidebar
+- User avatar + name at bottom of sidebar
+
+### Metric Cards (Dashboard)
+- White background, 1px border, subtle shadow
+- Large number (text-3xl font-bold)
+- Label below in text-sm text-muted-foreground
+- Trend indicator (up/down arrow + percentage) where applicable
+- Icon in top-right corner in muted color
+
+### Tables (DataTable)
+- Built on TanStack Table v8 via reusable `<DataTable>` component
+- Pagination: 25 rows default
+- Column header click = sort
+- Filter bar above table (search input + dropdowns)
+- Row actions in last column: View, Edit, Delete (icon buttons)
+- Empty state: illustration + message + primary CTA
+
+### Status Badges
+```ts
+// Student status
+Active → green badge
+Inactive → gray badge
+Graduated → blue badge
+Withdrawn → orange badge
+
+// Fee/Payroll status
+Paid → green
+Unpaid → red
+Partial → yellow
+
+// Attendance
+Present → green dot
+Absent → red dot
+```
+
+### Modals and Drawers
+- Create/Edit forms → Sheet (side drawer, 480px wide)
+- Destructive confirmations → Dialog (centered modal)
+- Quick views → Dialog
+- Never open a new page for CRUD — use Sheet/Dialog
+
+### Toast Notifications (Sonner)
+```ts
+toast.success('Fee collected successfully')
+toast.error('Failed to save. Please try again.')
+// Keep messages short, specific, and action-confirming
+```
+
+---
+
+## Currency & Locale
+
+```ts
+// lib/utils.ts
+export function formatCurrency(amount: number): string {
+  return `Rs. ${amount.toLocaleString('en-PK')}`;
+}
+// Output: Rs. 8,000 / Rs. 2,450,000
+// Never abbreviate: not "8K", not "$"
+```
+
+---
+
+## Pakistani Context Rules
+
+- Student ID format: `ADM-2026-0001`
+- Receipt number format: `#REC-000421`
+- Phone numbers: Pakistani format (03XX-XXXXXXX)
+- CNIC: XXXXX-XXXXXXX-X format with mask
+- Academic session names: `2025-26`, `2026-27`
+- Fee months: Full month + year (August 2026, not Aug-26)
+- All dates: DD/MM/YYYY display format, ISO 8601 storage
+- WhatsApp phone numbers default to +92 country code
+
+---
+
+## Naming Conventions
+
+- Files: `PascalCase` for components, `camelCase` for hooks/utils/types
+- Components: PascalCase (`StudentTable`, `FeeCollectionForm`)
+- Hooks: `useCamelCase` (`useStudents`, `usePermissions`)
+- Zustand stores: `camelCaseStore` (`authStore`, `uiStore`)
+- API routes (when building): kebab-case (`/api/fee-collection`)
+- DB field references in types: `snake_case` to match backend (`school_id`, `student_id`)
+- Constants: `SCREAMING_SNAKE_CASE`
+
+---
+
+## Performance Rules
+
+- All images use Next.js `<Image>` component — no `<img>` tags
+- Dynamic imports for heavy components (PDF viewer, charts on analytics page)
+- Tables never render more than 25 rows without pagination
+- Attendance sheet uses virtualization if student list > 50
+- No `useEffect` for data fetching — always TanStack Query
+
+---
+
+## Code Quality Rules
+
+- No commented-out code in commits
+- No TODO comments without a GitHub issue reference
+- No console.log in components — use proper error boundaries
+- Every API call wrapped in try/catch or TanStack Query error handling
+- No hardcoded strings for UI labels — define in a constants file or inline clearly
+- Zod schema is the single source of truth for form validation AND TypeScript type inference
+
+---
+
+## What NOT To Build
+
+- No student/parent login portal (explicitly out of scope)
+- No online classes, homework, library, hostel, or transport modules
+- No complex accounting (no double-entry, no tax calculations)
+- No AI features
+- No biometric integrations
+- Do not add tabs, sections, or form fields not described in the spec
+- Do not build a page router version — App Router only
+
+---
+
+## File Generation Order (For Cursor Completions)
+
+When generating new features, always follow this order:
+1. Types (`types/*.types.ts`)
+2. Zod schema (`lib/validators/*.schema.ts`)
+3. API hook (`hooks/use*.ts`)
+4. Component(s) (`components/feature/`)
+5. Page (`app/(tenant)/feature/page.tsx`)
+
+---
+
+## Accessibility Baseline
+
+- All interactive elements have `aria-label` or visible label
+- Focus rings visible (never `outline-none` without a substitute)
+- Color is never the only indicator of state (always pair with text or icon)
+- Form fields always have associated `<label>` elements
+- Keyboard navigable sidebar
