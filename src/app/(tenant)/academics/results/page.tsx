@@ -6,9 +6,15 @@ import {
   FileSpreadsheet,
   Loader2,
   MessageCircle,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useExams, useExamResults } from '@/hooks/useExams';
+import {
+  useExams,
+  useExamResults,
+  useSaveExamResults,
+} from '@/hooks/useExams';
+import { usePermissions } from '@/hooks/usePermissions';
 import { PageHeader } from '@/components/common/PageHeader';
 import { EmptyState } from '@/components/common/EmptyState';
 import { AppSelect } from '@/components/common/AppSelect';
@@ -16,22 +22,24 @@ import { ResultTable } from '@/components/exams/ResultTable';
 import { SendResultsDialog } from '@/components/exams/SendResultsDialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { CLASSES, SECTIONS } from '@/lib/constants';
 import { examTypeLabel } from '@/lib/results';
 import type { ExamResult } from '@/types/exam.types';
 
 export default function ResultsPage(): ReactNode {
+  const { can } = usePermissions();
+  const canManage = can('results', 'manage');
+
   const { data: exams, isLoading: examsLoading, isError: examsError } =
     useExams();
+  const saveMutation = useSaveExamResults();
 
   const [examId, setExamId] = useState('');
-  const [classId, setClassId] = useState('all');
-  const [sectionId, setSectionId] = useState('all');
   const [loadedExamId, setLoadedExamId] = useState('');
   const [localResults, setLocalResults] = useState<ExamResult[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sendOpen, setSendOpen] = useState(false);
   const [sendTargets, setSendTargets] = useState<ExamResult[]>([]);
+  const [dirty, setDirty] = useState(false);
 
   const {
     data: fetchedResults,
@@ -46,22 +54,7 @@ export default function ResultsPage(): ReactNode {
     [exams, loadedExamId]
   );
 
-  const sectionOptions = useMemo(() => {
-    if (classId === 'all') return SECTIONS;
-    return SECTIONS.filter((s) => s.classId === classId);
-  }, [classId]);
-
-  const displayResults = useMemo(() => {
-    const source = localResults ?? fetchedResults ?? [];
-    return source.filter((r) => {
-      if (!selectedExam) return true;
-      if (classId !== 'all' && selectedExam.classId !== classId) return false;
-      if (sectionId !== 'all' && selectedExam.sectionId !== sectionId) {
-        return false;
-      }
-      return true;
-    });
-  }, [localResults, fetchedResults, selectedExam, classId, sectionId]);
+  const workingResults = localResults ?? fetchedResults ?? [];
 
   function handleLoadResults(): void {
     if (!examId) {
@@ -70,11 +63,29 @@ export default function ResultsPage(): ReactNode {
     }
     setLocalResults(null);
     setSelectedIds([]);
+    setDirty(false);
     setLoadedExamId(examId);
   }
 
   function handleResultsChange(next: ExamResult[]): void {
     setLocalResults(next);
+    setDirty(true);
+  }
+
+  async function handleSaveMarks(): Promise<void> {
+    if (!loadedExamId || workingResults.length === 0) return;
+    try {
+      await saveMutation.mutateAsync({
+        examId: loadedExamId,
+        results: workingResults,
+      });
+      setDirty(false);
+      setLocalResults(null);
+      toast.success('Marks saved successfully');
+      void refetch();
+    } catch {
+      toast.error('Failed to save marks. Please try again.');
+    }
   }
 
   function openSendFor(results: ExamResult[]): void {
@@ -101,7 +112,7 @@ export default function ResultsPage(): ReactNode {
     );
   }
 
-  const selectedRows = displayResults.filter((r) =>
+  const selectedRows = workingResults.filter((r) =>
     selectedIds.includes(r.id)
   );
 
@@ -109,18 +120,36 @@ export default function ResultsPage(): ReactNode {
     <div>
       <PageHeader
         title="Exam Results"
-        subtitle="Enter marks, keep permanent records, and send results to parents on WhatsApp"
+        subtitle="Enter marks for monthly tests, mid-terms, mocks, and finals"
         breadcrumb={['Academics', 'Results']}
         action={
           selectedExam ? (
             <div className="flex flex-wrap gap-2">
+              {canManage && (
+                <Button
+                  onClick={() => void handleSaveMarks()}
+                  disabled={
+                    !dirty ||
+                    workingResults.length === 0 ||
+                    saveMutation.isPending
+                  }
+                >
+                  {saveMutation.isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  Save Marks
+                </Button>
+              )}
               <Button
+                variant="outline"
                 onClick={() =>
                   openSendFor(
-                    selectedRows.length > 0 ? selectedRows : displayResults
+                    selectedRows.length > 0 ? selectedRows : workingResults
                   )
                 }
-                disabled={displayResults.length === 0}
+                disabled={workingResults.length === 0}
               >
                 <MessageCircle className="size-4" />
                 {selectedRows.length > 0
@@ -147,81 +176,39 @@ export default function ResultsPage(): ReactNode {
       />
 
       <div className="mb-4 rounded-xl border bg-card p-5">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-2">
-            <Label htmlFor="filter-exam">Exam / Test</Label>
-            <AppSelect
-              id="filter-exam"
-              value={examId}
-              onValueChange={setExamId}
-              placeholder="Select exam"
-              disabled={examsLoading}
-              aria-label="Exam"
-              options={(exams ?? []).map((exam) => ({
-                value: exam.id,
-                label: `${exam.title} · ${examTypeLabel(exam.examType)}`,
-              }))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="filter-class">Class</Label>
-            <AppSelect
-              id="filter-class"
-              value={classId}
-              onValueChange={(v) => {
-                setClassId(v);
-                setSectionId('all');
-              }}
-              placeholder="All Classes"
-              aria-label="Class"
-              options={[
-                { value: 'all', label: 'All Classes' },
-                ...CLASSES.map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                })),
-              ]}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="filter-section">Section</Label>
-            <AppSelect
-              id="filter-section"
-              value={sectionId}
-              onValueChange={setSectionId}
-              placeholder="All Sections"
-              aria-label="Section"
-              options={[
-                { value: 'all', label: 'All Sections' },
-                ...sectionOptions.map((s) => ({
-                  value: s.id,
-                  label: s.name,
-                })),
-              ]}
-            />
-          </div>
-
-          <div className="flex items-end">
-            <Button
-              className="w-full"
-              onClick={handleLoadResults}
-              disabled={!examId || isFetching}
-            >
-              {(resultsLoading || isFetching) && loadedExamId === examId ? (
-                <Loader2 className="animate-spin" />
-              ) : null}
-              Load Results
-            </Button>
-          </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-x-4 sm:gap-y-2">
+          <Label htmlFor="filter-exam" className="sm:col-span-2">
+            Exam / Test
+          </Label>
+          <AppSelect
+            id="filter-exam"
+            value={examId}
+            onValueChange={setExamId}
+            placeholder="Select exam"
+            disabled={examsLoading}
+            aria-label="Exam"
+            options={(exams ?? []).map((exam) => ({
+              value: exam.id,
+              label: `${exam.title} · ${exam.className}-${exam.sectionName} · ${examTypeLabel(exam.examType)}`,
+            }))}
+          />
+          <Button
+            className="h-10 w-full sm:w-auto"
+            onClick={handleLoadResults}
+            disabled={!examId || isFetching}
+          >
+            {(resultsLoading || isFetching) && loadedExamId === examId ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            Load Marks Sheet
+          </Button>
         </div>
       </div>
 
       {!loadedExamId ? (
         <EmptyState
           title="Select an exam"
-          description="Choose a monthly test, mid-term, mock, or any exam, then load results to mark and notify parents."
+          description="Choose a monthly test, mid-term, mock, or final exam, then load the marks sheet to enter scores for every student in that class."
         />
       ) : resultsError ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
@@ -230,7 +217,7 @@ export default function ResultsPage(): ReactNode {
       ) : resultsLoading ? (
         <div className="flex items-center justify-center rounded-lg border bg-card py-16 text-sm text-muted-foreground">
           <Loader2 className="mr-2 size-4 animate-spin" />
-          Loading results...
+          Loading marks sheet...
         </div>
       ) : selectedExam ? (
         <>
@@ -245,15 +232,24 @@ export default function ResultsPage(): ReactNode {
               {selectedExam.className}-{selectedExam.sectionName}
             </span>
             <span>·</span>
+            <span>{workingResults.length} students</span>
+            <span>·</span>
             <span>
-              {displayResults.filter((r) => r.deliveryStatus === 'sent').length}/
-              {displayResults.length} parents notified
+              {workingResults.filter((r) => r.deliveryStatus === 'sent').length}/
+              {workingResults.length} parents notified
             </span>
+            {dirty && (
+              <>
+                <span>·</span>
+                <span className="font-medium text-warning">Unsaved changes</span>
+              </>
+            )}
           </div>
           <ResultTable
             exam={selectedExam}
-            results={displayResults}
-            onChange={handleResultsChange}
+            results={workingResults}
+            onChange={canManage ? handleResultsChange : undefined}
+            readOnly={!canManage}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             onSendOne={(result) => openSendFor([result])}

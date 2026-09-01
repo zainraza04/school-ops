@@ -52,7 +52,7 @@ export function AppSelect({
         id={id}
         aria-label={ariaLabel}
         className={cn(
-          'h-10 w-full min-w-[140px] rounded-md border-input bg-background px-3 text-sm shadow-none',
+          'h-10 min-h-10 w-full min-w-[140px] rounded-md border-input bg-background px-3 text-sm shadow-none',
           triggerClassName
         )}
       >

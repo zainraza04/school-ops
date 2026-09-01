@@ -233,24 +233,22 @@ export default function ExpensesPage(): ReactNode {
           },
         ]}
       >
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        <label className="flex min-w-[160px] flex-col sm:w-[180px]">
           <span className="sr-only">From date</span>
           <Input
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             aria-label="From date"
-            className="h-8 w-auto"
           />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        <label className="flex min-w-[160px] flex-col sm:w-[180px]">
           <span className="sr-only">To date</span>
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             aria-label="To date"
-            className="h-8 w-auto"
           />
         </label>
       </FilterBar>

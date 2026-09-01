@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
-import { MessageCircle } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { MessageCircle, Pencil } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '@/components/common/EmptyState';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { calculateGrade, cn, formatDate } from '@/lib/utils';
+import { calculateGrade, formatDate } from '@/lib/utils';
 import type { Exam, ExamResult } from '@/types/exam.types';
 
 interface ResultTableProps {
@@ -25,11 +25,7 @@ interface ResultTableProps {
   selectedIds?: string[];
   onSelectionChange?: (ids: string[]) => void;
   onSendOne?: (result: ExamResult) => void;
-}
-
-interface EditingCell {
-  resultId: string;
-  subjectId: string;
+  readOnly?: boolean;
 }
 
 function recomputeResult(
@@ -60,9 +56,9 @@ export function ResultTable({
   selectedIds = [],
   onSelectionChange,
   onSendOne,
+  readOnly = false,
 }: ResultTableProps): ReactNode {
-  const [editing, setEditing] = useState<EditingCell | null>(null);
-  const editable = Boolean(onChange);
+  const editable = Boolean(onChange) && !readOnly;
   const selectable = Boolean(onSelectionChange);
 
   function updateMark(
@@ -103,8 +99,8 @@ export function ResultTable({
   if (results.length === 0) {
     return (
       <EmptyState
-        title="No results found"
-        description="Load results for an exam to enter or review marks."
+        title="No students in this class"
+        description="No active students were found for this exam's class and section."
       />
     );
   }
@@ -113,146 +109,131 @@ export function ResultTable({
     results.length > 0 && results.every((r) => selectedIds.includes(r.id));
 
   return (
-    <div className="overflow-x-auto rounded-xl border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {selectable && (
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={(v) => toggleAll(v === true)}
-                  aria-label="Select all students"
-                />
-              </TableHead>
-            )}
-            <TableHead className="sticky left-0 z-10 min-w-[160px] bg-card">
-              Student
-            </TableHead>
-            {exam.subjects.map((subject) => (
-              <TableHead key={subject.id} className="min-w-[100px] text-center">
-                <div>{subject.name}</div>
-                <div className="text-xs font-normal text-muted-foreground">
-                  / {subject.maxMarks}
-                </div>
-              </TableHead>
-            ))}
-            <TableHead className="text-center">Total</TableHead>
-            <TableHead className="text-center">Obtained</TableHead>
-            <TableHead className="text-center">%</TableHead>
-            <TableHead className="text-center">Grade</TableHead>
-            <TableHead className="min-w-[120px]">Parent Notify</TableHead>
-            {onSendOne && <TableHead className="w-12" />}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {results.map((result) => (
-            <TableRow key={result.id}>
-              {selectable && (
-                <TableCell>
-                  <Checkbox
-                    checked={selectedIds.includes(result.id)}
-                    onCheckedChange={(v) => toggleOne(result.id, v === true)}
-                    aria-label={`Select ${result.studentName}`}
-                  />
-                </TableCell>
-              )}
-              <TableCell className="sticky left-0 z-10 bg-card font-medium">
-                {result.studentName}
-              </TableCell>
-              {exam.subjects.map((subject) => {
-                const isEditing =
-                  editing?.resultId === result.id &&
-                  editing.subjectId === subject.id;
-                const value = result.marks[subject.id] ?? 0;
+    <div className="space-y-3">
+      {editable && (
+        <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
+          <Pencil className="size-4 shrink-0 text-primary" aria-hidden />
+          <span>
+            Enter marks in the boxes below. Totals, percentage, and grade update
+            automatically.
+          </span>
+        </div>
+      )}
 
-                return (
-                  <TableCell
-                    key={subject.id}
-                    className={cn(
-                      'p-1 text-center',
-                      editable && 'cursor-pointer hover:bg-muted/50'
-                    )}
-                    onClick={() => {
-                      if (!editable) return;
-                      setEditing({
-                        resultId: result.id,
-                        subjectId: subject.id,
-                      });
-                    }}
-                  >
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        min={0}
-                        max={subject.maxMarks}
-                        autoFocus
-                        className="mx-auto h-8 w-20 text-center"
-                        defaultValue={value}
-                        aria-label={`${result.studentName} ${subject.name} marks`}
-                        onBlur={(e) => {
-                          updateMark(result.id, subject.id, e.target.value);
-                          setEditing(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            updateMark(
-                              result.id,
-                              subject.id,
-                              (e.target as HTMLInputElement).value
-                            );
-                            setEditing(null);
-                          }
-                          if (e.key === 'Escape') {
-                            setEditing(null);
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <span className="inline-flex h-8 min-w-12 items-center justify-center rounded-md px-2 text-sm">
-                        {value}
-                      </span>
-                    )}
-                  </TableCell>
-                );
-              })}
-              <TableCell className="text-center text-muted-foreground">
-                {result.total}
-              </TableCell>
-              <TableCell className="text-center font-medium">
-                {result.obtained}
-              </TableCell>
-              <TableCell className="text-center">{result.percentage}%</TableCell>
-              <TableCell className="text-center font-semibold">
-                {result.grade}
-              </TableCell>
-              <TableCell>
-                <div className="space-y-1">
-                  <StatusBadge status={result.deliveryStatus} />
-                  {result.lastSentAt && (
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatDate(result.lastSentAt)}
-                    </p>
-                  )}
-                </div>
-              </TableCell>
-              {onSendOne && (
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Send result to ${result.studentName}'s parent`}
-                    onClick={() => onSendOne(result)}
-                  >
-                    <MessageCircle className="size-4 text-success" />
-                  </Button>
-                </TableCell>
+      <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm ring-1 ring-border/40">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {selectable && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={(v) => toggleAll(v === true)}
+                    aria-label="Select all students"
+                  />
+                </TableHead>
               )}
+              <TableHead className="sticky left-0 z-10 min-w-[180px] bg-slate-50/95 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                Student
+              </TableHead>
+              {exam.subjects.map((subject) => (
+                <TableHead
+                  key={subject.id}
+                  className="min-w-[120px] text-center normal-case"
+                >
+                  <div>{subject.name}</div>
+                  <div className="mt-0.5 text-[11px] font-medium tracking-normal text-muted-foreground normal-case">
+                    Max {subject.maxMarks}
+                  </div>
+                </TableHead>
+              ))}
+              <TableHead className="text-center normal-case">Total</TableHead>
+              <TableHead className="text-center normal-case">Obtained</TableHead>
+              <TableHead className="text-center normal-case">%</TableHead>
+              <TableHead className="text-center normal-case">Grade</TableHead>
+              <TableHead className="min-w-[130px] normal-case">Parent Notify</TableHead>
+              {onSendOne && <TableHead className="w-14 normal-case" />}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {results.map((result) => (
+              <TableRow key={result.id}>
+                {selectable && (
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(result.id)}
+                      onCheckedChange={(v) => toggleOne(result.id, v === true)}
+                      aria-label={`Select ${result.studentName}`}
+                    />
+                  </TableCell>
+                )}
+                <TableCell className="sticky left-0 z-10 bg-inherit font-medium shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
+                  {result.studentName}
+                </TableCell>
+                {exam.subjects.map((subject) => {
+                  const value = result.marks[subject.id] ?? 0;
+
+                  return (
+                    <TableCell key={subject.id} className="p-1.5 text-center">
+                      {editable ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          max={subject.maxMarks}
+                          inputMode="numeric"
+                          value={value === 0 ? '' : String(value)}
+                          placeholder="0"
+                          className="mx-auto h-9 w-[4.5rem] text-center tabular-nums"
+                          aria-label={`${result.studentName} ${subject.name} marks`}
+                          onChange={(e) =>
+                            updateMark(result.id, subject.id, e.target.value)
+                          }
+                        />
+                      ) : (
+                        <span className="inline-flex h-9 min-w-12 items-center justify-center text-sm font-medium">
+                          {value}
+                        </span>
+                      )}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-center text-muted-foreground">
+                  {result.total}
+                </TableCell>
+                <TableCell className="text-center font-medium">
+                  {result.obtained}
+                </TableCell>
+                <TableCell className="text-center">{result.percentage}%</TableCell>
+                <TableCell className="text-center font-semibold text-primary">
+                  {result.grade}
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <StatusBadge status={result.deliveryStatus} />
+                    {result.lastSentAt && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatDate(result.lastSentAt)}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+                {onSendOne && (
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Send result to ${result.studentName}'s parent`}
+                      onClick={() => onSendOne(result)}
+                    >
+                      <MessageCircle className="size-4 text-success" />
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

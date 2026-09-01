@@ -1,21 +1,19 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { CalendarDays, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useExams } from '@/hooks/useExams';
 import { PageHeader } from '@/components/common/PageHeader';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingState } from '@/components/common/LoadingState';
 import {
   ExamForm,
   type ExamFormValues,
 } from '@/components/exams/ExamForm';
+import { ExamCard } from '@/components/exams/ExamCard';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CLASSES, SECTIONS } from '@/lib/constants';
-import { formatDate } from '@/lib/utils';
 import type { Exam } from '@/types/exam.types';
 
 export default function ExamsPage(): ReactNode {
@@ -104,45 +102,9 @@ export default function ExamsPage(): ReactNode {
           action={{ label: 'Create Exam', onClick: () => setFormOpen(true) }}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {exams.map((exam) => (
-            <Card key={exam.id} className="rounded-lg border bg-white shadow-sm">
-              <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-base font-semibold">
-                    {exam.title}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {exam.className} — Section {exam.sectionName}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status={exam.examType} />
-                  <StatusBadge status={exam.status} />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarDays className="size-4 shrink-0" aria-hidden />
-                  <span>{formatDate(exam.date)}</span>
-                </div>
-                <div>
-                  <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-                    Subjects ({exam.subjects.length})
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {exam.subjects.map((subject) => (
-                      <span
-                        key={subject.id}
-                        className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs text-foreground"
-                      >
-                        {subject.name} ({subject.maxMarks})
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <ExamCard key={exam.id} exam={exam} />
           ))}
         </div>
       )}

@@ -101,7 +101,7 @@ function ReportSection({
         <p className="text-sm text-muted-foreground">{description}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Report type</Label>
@@ -124,56 +124,63 @@ function ReportSection({
               </RadioGroup>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              {showClassFilter && (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  <span>Class</span>
-                  <AppSelect
-                    value={classFilter}
-                    onValueChange={onClassFilterChange}
-                    placeholder="All Classes"
-                    aria-label="Class filter"
-                    options={[
-                      { value: 'all', label: 'All Classes' },
-                      ...CLASSES.map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      })),
-                    ]}
-                  />
-                </label>
-              )}
-              {showCategoryFilter && onCategoryFilterChange && (
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  <span>Category</span>
-                  <AppSelect
-                    value={categoryFilter ?? 'all'}
-                    onValueChange={onCategoryFilterChange}
-                    placeholder="All Categories"
-                    aria-label="Category filter"
-                    options={[
-                      { value: 'all', label: 'All Categories' },
-                      ...EXPENSE_CATEGORIES.map((c) => ({
-                        value: c,
-                        label: c,
-                      })),
-                    ]}
-                  />
-                </label>
-              )}
-            </div>
+            {(showClassFilter || showCategoryFilter) && (
+              <div className="flex flex-wrap gap-3">
+                {showClassFilter && (
+                  <label className="flex min-w-[180px] flex-col gap-1.5 text-sm font-medium">
+                    <span>Class</span>
+                    <AppSelect
+                      value={classFilter}
+                      onValueChange={onClassFilterChange}
+                      placeholder="All Classes"
+                      aria-label="Class filter"
+                      options={[
+                        { value: 'all', label: 'All Classes' },
+                        ...CLASSES.map((c) => ({
+                          value: c.id,
+                          label: c.name,
+                        })),
+                      ]}
+                    />
+                  </label>
+                )}
+                {showCategoryFilter && onCategoryFilterChange && (
+                  <label className="flex min-w-[180px] flex-col gap-1.5 text-sm font-medium">
+                    <span>Category</span>
+                    <AppSelect
+                      value={categoryFilter ?? 'all'}
+                      onValueChange={onCategoryFilterChange}
+                      placeholder="All Categories"
+                      aria-label="Category filter"
+                      options={[
+                        { value: 'all', label: 'All Categories' },
+                        ...EXPENSE_CATEGORIES.map((c) => ({
+                          value: c,
+                          label: c,
+                        })),
+                      ]}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col gap-2 lg:items-end">
-            <Button onClick={onGenerate} aria-label={`Generate ${title}`}>
+          <div className="flex shrink-0 flex-col gap-2 lg:items-end">
+            <Button
+              onClick={onGenerate}
+              className="w-full sm:w-auto"
+              aria-label={`Generate ${title}`}
+            >
               <FileText className="size-4" />
               Generate Report
             </Button>
             {generated && (
-              <div className="flex gap-2">
+              <div className="flex w-full gap-2 sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   onClick={() => toast.success('PDF export started')}
                   aria-label="Export PDF"
                 >
@@ -183,6 +190,7 @@ function ReportSection({
                 <Button
                   variant="outline"
                   size="sm"
+                  className="flex-1 sm:flex-none"
                   onClick={() => toast.success('Excel export started')}
                   aria-label="Export Excel"
                 >

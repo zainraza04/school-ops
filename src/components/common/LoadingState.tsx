@@ -26,11 +26,20 @@ export function LoadingState({
 
   if (variant === 'table') {
     return (
-      <div className="space-y-3 rounded-lg border bg-card p-4">
-        <Skeleton className="h-8 w-full" />
-        {Array.from({ length: rows }).map((_, i) => (
-          <Skeleton key={i} className="h-10 w-full" />
-        ))}
+      <div className="overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm ring-1 ring-border/40">
+        <div className="border-b border-border/60 bg-slate-50/90 px-4 py-3.5">
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="divide-y divide-border/50">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

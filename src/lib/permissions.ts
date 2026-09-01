@@ -25,7 +25,7 @@ const PERMISSION_MATRIX: Record<Resource, Partial<Record<Permission, Role[]>>> =
   payroll: { view: ['owner'], manage: ['owner'] },
   expenses: { view: ['owner', 'admin'], manage: ['owner', 'admin'] },
   exams: { view: ['owner', 'admin', 'teacher'], manage: ['owner', 'admin'] },
-  results: { view: ['owner', 'admin', 'teacher'], manage: ['owner', 'admin'] },
+  results: { view: ['owner', 'admin', 'teacher'], manage: ['owner', 'admin', 'teacher'] },
   reports: { view: ['owner', 'admin'] },
   analytics: { view: ['owner', 'admin'] },
   settings: { manage: ['owner'] },

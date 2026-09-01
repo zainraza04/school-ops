@@ -8,7 +8,7 @@ import {
   MOCK_RESULTS,
   MOCK_STUDENTS,
 } from '@/lib/mockData';
-import { buildResultWhatsAppMessage } from '@/lib/results';
+import { buildResultWhatsAppMessage, buildResultSheetForExam } from '@/lib/results';
 import type {
   Exam,
   ExamResult,
@@ -32,11 +32,44 @@ export function useExamResults(
     queryKey: ['results', examId],
     queryFn: async () => {
       await new Promise((r) => setTimeout(r, 350));
-      return MOCK_RESULTS.filter((r) => r.examId === examId).map((r) => ({
-        ...r,
-      }));
+      const exam = MOCK_EXAMS.find((e) => e.id === examId);
+      if (!exam) return [];
+      const existing = MOCK_RESULTS.filter((r) => r.examId === examId).map(
+        (r) => ({ ...r })
+      );
+      return buildResultSheetForExam(exam, MOCK_STUDENTS, existing);
     },
     enabled: Boolean(examId),
+  });
+}
+
+interface SaveResultsInput {
+  examId: string;
+  results: ExamResult[];
+}
+
+export function useSaveExamResults(): ReturnType<
+  typeof useMutation<ExamResult[], Error, SaveResultsInput>
+> {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      examId,
+      results,
+    }: SaveResultsInput): Promise<ExamResult[]> => {
+      await new Promise((r) => setTimeout(r, 500));
+
+      const remaining = MOCK_RESULTS.filter((r) => r.examId !== examId);
+      MOCK_RESULTS.length = 0;
+      MOCK_RESULTS.push(...remaining, ...results);
+
+      return results;
+    },
+    onSuccess: (_data, variables) => {
+      void qc.invalidateQueries({ queryKey: ['results', variables.examId] });
+      void qc.invalidateQueries({ queryKey: ['student-results'] });
+    },
   });
 }
 

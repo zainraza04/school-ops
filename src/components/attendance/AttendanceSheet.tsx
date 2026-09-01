@@ -85,9 +85,92 @@ export function AttendanceSheet(): ReactNode {
   return (
     <div className="space-y-4">
       <Card className="rounded-xl border bg-card shadow-sm ring-1 ring-border/60">
-        <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="attendance-date">Date</Label>
+        <CardContent className="p-5">
+          {/* Mobile: stacked label + field pairs */}
+          <div className="flex flex-col gap-4 sm:hidden">
+            <div className="space-y-2">
+              <Label htmlFor="attendance-date-mobile">Date</Label>
+              <Input
+                id="attendance-date-mobile"
+                type="date"
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  setLoaded(false);
+                  setRecords([]);
+                }}
+                className="h-10"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attendance-class-mobile">Class</Label>
+              <AppSelect
+                id="attendance-class-mobile"
+                value={classId}
+                onValueChange={(v) => {
+                  setClassId(v);
+                  setSectionId('');
+                  setLoaded(false);
+                  setRecords([]);
+                }}
+                placeholder="Select class"
+                options={CLASSES.map((c) => ({ value: c.id, label: c.name }))}
+                aria-label="Class"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attendance-section-mobile">Section</Label>
+              <AppSelect
+                id="attendance-section-mobile"
+                value={sectionId}
+                onValueChange={(v) => {
+                  setSectionId(v);
+                  setLoaded(false);
+                  setRecords([]);
+                }}
+                placeholder="Select section"
+                disabled={!classId}
+                options={sectionsForClass.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                }))}
+                aria-label="Section"
+              />
+            </div>
+            <Button
+              type="button"
+              className="h-10 w-full"
+              onClick={() => {
+                void handleLoad();
+              }}
+              disabled={isFetching || !classId || !sectionId || !date}
+            >
+              {isFetching ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                <>
+                  <Users className="size-4" />
+                  Load Students
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop: labels row + controls row (button aligns with inputs) */}
+          <div className="hidden gap-x-4 gap-y-2 sm:grid sm:grid-cols-[11rem_11rem_10rem_auto]">
+            <Label htmlFor="attendance-date" className="col-start-1 row-start-1">
+              Date
+            </Label>
+            <Label htmlFor="attendance-class" className="col-start-2 row-start-1">
+              Class
+            </Label>
+            <Label htmlFor="attendance-section" className="col-start-3 row-start-1">
+              Section
+            </Label>
+
             <Input
               id="attendance-date"
               type="date"
@@ -97,63 +180,62 @@ export function AttendanceSheet(): ReactNode {
                 setLoaded(false);
                 setRecords([]);
               }}
-              className="w-full sm:w-44"
+              className="col-start-1 row-start-2 h-10"
             />
-          </div>
-          <div className="min-w-[160px] space-y-2">
-            <Label htmlFor="attendance-class">Class</Label>
-            <AppSelect
-              id="attendance-class"
-              value={classId}
-              onValueChange={(v) => {
-                setClassId(v);
-                setSectionId('');
-                setLoaded(false);
-                setRecords([]);
+            <div className="col-start-2 row-start-2 min-w-0">
+              <AppSelect
+                id="attendance-class"
+                value={classId}
+                onValueChange={(v) => {
+                  setClassId(v);
+                  setSectionId('');
+                  setLoaded(false);
+                  setRecords([]);
+                }}
+                placeholder="Select class"
+                options={CLASSES.map((c) => ({ value: c.id, label: c.name }))}
+                aria-label="Class"
+              />
+            </div>
+            <div className="col-start-3 row-start-2 min-w-0">
+              <AppSelect
+                id="attendance-section"
+                value={sectionId}
+                onValueChange={(v) => {
+                  setSectionId(v);
+                  setLoaded(false);
+                  setRecords([]);
+                }}
+                placeholder="Select section"
+                disabled={!classId}
+                options={sectionsForClass.map((s) => ({
+                  value: s.id,
+                  label: s.name,
+                }))}
+                aria-label="Section"
+              />
+            </div>
+            <Button
+              type="button"
+              className="col-start-4 row-start-2 h-10 w-auto"
+              onClick={() => {
+                void handleLoad();
               }}
-              placeholder="Select class"
-              options={CLASSES.map((c) => ({ value: c.id, label: c.name }))}
-              aria-label="Class"
-            />
+              disabled={isFetching || !classId || !sectionId || !date}
+            >
+              {isFetching ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                <>
+                  <Users className="size-4" />
+                  Load Students
+                </>
+              )}
+            </Button>
           </div>
-          <div className="min-w-[140px] space-y-2">
-            <Label htmlFor="attendance-section">Section</Label>
-            <AppSelect
-              id="attendance-section"
-              value={sectionId}
-              onValueChange={(v) => {
-                setSectionId(v);
-                setLoaded(false);
-                setRecords([]);
-              }}
-              placeholder="Select section"
-              disabled={!classId}
-              options={sectionsForClass.map((s) => ({
-                value: s.id,
-                label: s.name,
-              }))}
-              aria-label="Section"
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={() => {
-              void handleLoad();
-            }}
-            disabled={isFetching || !classId || !sectionId || !date}
-          >
-            {isFetching ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Loading…
-              </>
-            ) : (
-              <>
-                <Users className="size-4" />
-                Load Students
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
 

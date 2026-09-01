@@ -80,10 +80,7 @@ export default function SettingsPage(): ReactNode {
       />
 
       <Tabs defaultValue="profile" orientation="vertical" className="gap-6 lg:flex-row">
-        <TabsList
-          variant="line"
-          className="h-auto w-full shrink-0 justify-start lg:w-52 lg:flex-col"
-        >
+        <TabsList className="h-auto w-full shrink-0 lg:w-56">
           <TabsTrigger value="profile">School Profile</TabsTrigger>
           <TabsTrigger value="session">Academic Session</TabsTrigger>
           <TabsTrigger value="fees">Fee Settings</TabsTrigger>
