@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# School Ops
 
-## Getting Started
+Frontend for a multi-tenant school operations platform focused on the day-to-day needs of Pakistani schools.
 
-First, run the development server:
+The application separates platform administration from tenant school workflows and provides role-aware access to student, attendance, fee, staff, academic, finance, reporting, and analytics modules.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Current status
+
+This repository contains the frontend application. It currently includes mock authentication and sample data for local development, alongside an Axios API client prepared for backend integration through `NEXT_PUBLIC_API_URL`.
+
+## Product areas
+
+- Tenant dashboard with operational summaries and charts
+- Student records and related workflows
+- Attendance management
+- Fee collection and financial views
+- Academic and examination workflows
+- Staff and payroll areas
+- Reports, analytics, notifications, and settings
+- SaaS administration for platform-level workflows
+- Role-aware navigation and route protection
+- Printable and PDF-oriented reporting interfaces
+
+## Technology
+
+- Next.js 16 with the App Router
+- React 19 and TypeScript
+- Tailwind CSS 4 and Base UI
+- TanStack Query and TanStack Table
+- Zustand
+- React Hook Form and Zod
+- Axios
+- Recharts
+- React PDF
+
+## Architecture
+
+```text
+src/app/(auth)/         Authentication routes
+src/app/(saas-admin)/   Platform administration routes
+src/app/(tenant)/       School tenant routes
+src/components/         Domain and shared interface components
+src/hooks/              Reusable application hooks
+src/lib/                API, auth, permissions, validation, and utilities
+src/providers/          Application providers
+src/store/              Authentication and interface state
+src/types/              Shared TypeScript models
+src/middleware.ts       Authentication and role-aware route guards
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Route middleware separates SaaS administrators from tenant users. Teacher access is restricted from fee, payroll, finance, and settings areas. Client requests use a shared Axios instance with authentication headers and centralized handling for expired sessions.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local development
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Use a recent Node.js LTS release.
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To connect the frontend to an API, create `.env.local`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+```
 
-## Deploy on Vercel
+Without a configured backend, the included mock authentication and sample data support local interface development.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev       # Start the development server
+npm run build     # Create a production build
+npm run start     # Run the production server
+npm run lint      # Run ESLint
+```
